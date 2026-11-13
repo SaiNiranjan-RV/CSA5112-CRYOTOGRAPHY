@@ -1,0 +1,120 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int main()
+{
+    char key[100], text[100];
+    char matrix[5][5];
+    char used[26] = {0};
+    int i, j, k = 0;
+
+    printf("Enter the keyword: ");
+    scanf("%99s", key);
+
+    // Create 5x5 matrix using the keyword
+    for (i = 0; key[i] != '\0'; i++)
+    {
+        char ch = toupper(key[i]);
+
+        if (ch == 'J')
+            ch = 'I';
+
+        if (ch >= 'A' && ch <= 'Z' && !used[ch - 'A'])
+        {
+            matrix[k / 5][k % 5] = ch;
+            used[ch - 'A'] = 1;
+            k++;
+        }
+    }
+
+    // Fill remaining letters
+    for (i = 0; i < 26; i++)
+    {
+        if (i == 9)
+            continue;
+
+        if (!used[i])
+        {
+            matrix[k / 5][k % 5] = 'A' + i;
+            k++;
+        }
+    }
+
+    // Display matrix
+    printf("\nPlayfair Matrix:\n");
+
+    for (i = 0; i < 5; i++)
+    {
+        for (j = 0; j < 5; j++)
+        {
+            printf("%c ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("\nEnter the plaintext: ");
+    scanf("%99s", text);
+
+    // Encrypt the plaintext
+    printf("\nEncrypted text: ");
+
+    for (i = 0; text[i] != '\0'; i += 2)
+    {
+        char a = toupper(text[i]);
+        char b = text[i + 1] ? toupper(text[i + 1]) : 'X';
+
+        if (a == 'J')
+            a = 'I';
+        if (b == 'J')
+            b = 'I';
+
+        if (a == b)
+            b = 'X';
+
+        int r1, c1, r2, c2;
+
+        for (j = 0; j < 5; j++)
+        {
+            for (int l = 0; l < 5; l++)
+            {
+                if (matrix[j][l] == a)
+                {
+                    r1 = j;
+                    c1 = l;
+                }
+
+                if (matrix[j][l] == b)
+                {
+                    r2 = j;
+                    c2 = l;
+                }
+            }
+        }
+
+        if (r1 == r2)
+        {
+            printf("%c%c",
+                matrix[r1][(c1 + 1) % 5],
+                matrix[r2][(c2 + 1) % 5]);
+        }
+        else if (c1 == c2)
+        {
+            printf("%c%c",
+                matrix[(r1 + 1) % 5][c1],
+                matrix[(r2 + 1) % 5][c2]);
+        }
+        else
+        {
+            printf("%c%c",
+                matrix[r1][c2],
+                matrix[r2][c1]);
+        }
+    }
+
+    printf("\n");
+
+    return 0;
+}
+
