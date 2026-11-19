@@ -1,0 +1,120 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+char matrix[5][5] = {
+    {'M','F','H','I','K'},
+    {'U','N','O','P','Q'},
+    {'Z','V','W','X','Y'},
+    {'E','L','A','R','G'},
+    {'D','S','T','B','C'}
+};
+
+// Find the position of a character
+void findPosition(char ch, int *row, int *col)
+{
+    if (ch == 'J')
+        ch = 'I';
+
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            if (matrix[i][j] == ch)
+            {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+// Encrypt two characters
+void encryptPair(char a, char b)
+{
+    int r1, c1, r2, c2;
+
+    findPosition(a, &r1, &c1);
+    findPosition(b, &r2, &c2);
+
+    // Same row
+    if (r1 == r2)
+    {
+        printf("%c%c",
+            matrix[r1][(c1 + 1) % 5],
+            matrix[r2][(c2 + 1) % 5]);
+    }
+
+    // Same column
+    else if (c1 == c2)
+    {
+        printf("%c%c",
+            matrix[(r1 + 1) % 5][c1],
+            matrix[(r2 + 1) % 5][c2]);
+    }
+
+    // Rectangle rule
+    else
+    {
+        printf("%c%c",
+            matrix[r1][c2],
+            matrix[r2][c1]);
+    }
+}
+
+int main()
+{
+    char msg[] = "Must see you over Cadogan West. Coming at once.";
+    char text[200];
+    int i, j = 0;
+
+    // Remove spaces and special characters
+    for (i = 0; msg[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)msg[i]))
+        {
+            char ch = toupper((unsigned char)msg[i]);
+
+            if (ch == 'J')
+                ch = 'I';
+
+            text[j++] = ch;
+        }
+    }
+
+    text[j] = '\0';
+
+    printf("Plain Text: %s\n", text);
+    printf("Encrypted Text: ");
+
+    // Process characters in pairs
+    for (i = 0; i < j; )
+    {
+        char a = text[i];
+        char b;
+
+        if (i + 1 >= j)
+        {
+            b = 'X';
+            i++;
+        }
+        else if (text[i] == text[i + 1])
+        {
+            b = 'X';
+            i++;
+        }
+        else
+        {
+            b = text[i + 1];
+            i += 2;
+        }
+
+        encryptPair(a, b);
+    }
+
+    printf("\n");
+
+    return 0;
+}
