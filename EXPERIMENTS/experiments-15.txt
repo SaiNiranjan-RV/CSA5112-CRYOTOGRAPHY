@@ -1,0 +1,138 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX 1000
+
+// English letter frequencies (percentage)
+double englishFreq[26] = {
+    8.167, 1.492, 2.782, 4.253, 12.702,
+    2.228, 2.015, 6.094, 6.966, 0.153,
+    0.772, 4.025, 2.406, 6.749, 7.507,
+    1.929, 0.095, 5.987, 6.327, 9.056,
+    2.758, 0.978, 2.360, 0.150, 1.974,
+    0.074
+};
+
+struct Result {
+    int key;
+    char text[MAX];
+    double score;
+};
+
+// Decrypt ciphertext using a key
+void decrypt(char cipher[], char plain[], int key)
+{
+    int i;
+
+    for (i = 0; cipher[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)cipher[i]))
+        {
+            char base = isupper((unsigned char)cipher[i])
+                        ? 'A' : 'a';
+
+            plain[i] = (cipher[i] - base - key + 26) % 26
+                       + base;
+        }
+        else
+        {
+            plain[i] = cipher[i];
+        }
+    }
+
+    plain[i] = '\0';
+}
+
+// Calculate frequency score
+double calculateScore(char text[])
+{
+    int count[26] = {0};
+    int total = 0;
+    int i;
+    double score = 0.0;
+
+    for (i = 0; text[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)text[i]))
+        {
+            count[toupper((unsigned char)text[i]) - 'A']++;
+            total++;
+        }
+    }
+
+    if (total == 0)
+        return 0;
+
+    for (i = 0; i < 26; i++)
+    {
+        double observed = (double)count[i] / total * 100;
+
+        score += (observed - englishFreq[i]) *
+                 (observed - englishFreq[i]) /
+                 englishFreq[i];
+    }
+
+    return score;
+}
+
+int main()
+{
+    char cipher[MAX];
+    struct Result results[26], temp;
+    int top, i, j;
+
+    printf("Enter ciphertext: ");
+    fgets(cipher, MAX, stdin);
+
+    cipher[strcspn(cipher, "\n")] = '\0';
+
+    printf("Enter number of top plaintexts: ");
+    scanf("%d", &top);
+
+    if (top < 1)
+        top = 1;
+
+    if (top > 26)
+        top = 26;
+
+    // Try all possible keys
+    for (i = 0; i < 26; i++)
+    {
+        results[i].key = i;
+
+        decrypt(cipher, results[i].text, i);
+
+        results[i].score =
+            calculateScore(results[i].text);
+    }
+
+    // Sort results by ascending frequency error
+    for (i = 0; i < 25; i++)
+    {
+        for (j = i + 1; j < 26; j++)
+        {
+            if (results[i].score > results[j].score)
+            {
+                temp = results[i];
+                results[i] = results[j];
+                results[j] = temp;
+            }
+        }
+    }
+
+    // Display top N results
+    printf("\nTop %d Possible Plaintexts:\n\n", top);
+
+    for (i = 0; i < top; i++)
+    {
+        printf("Rank: %d\n", i + 1);
+        printf("Key: %d\n", results[i].key);
+        printf("Plaintext: %s\n", results[i].text);
+        printf("Frequency Score: %.4f\n\n",
+               results[i].score);
+    }
+
+    return 0;
+}
