@@ -1,0 +1,89 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int key[2][2] = {
+    {9, 4},
+    {5, 7}
+};
+
+int inverse[2][2] = {
+    {5, 12},
+    {15, 25}
+};
+
+// Function to encrypt or decrypt
+void process(char text[], int matrix[2][2])
+{
+    int i, a, b, x, y;
+
+    for (i = 0; text[i] != '\0'; i += 2)
+    {
+        a = text[i] - 'A';
+        b = text[i + 1] - 'A';
+
+        x = (matrix[0][0] * a +
+             matrix[0][1] * b) % 26;
+
+        y = (matrix[1][0] * a +
+             matrix[1][1] * b) % 26;
+
+        printf("%c%c", x + 'A', y + 'A');
+    }
+
+    printf("\n");
+}
+
+int main()
+{
+    char msg[] =
+    "meet me at the usual place at ten rather than eight oclock";
+
+    char plain[100], cipher[100];
+    int i, j = 0;
+
+    // Remove spaces and convert to uppercase
+    for (i = 0; msg[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)msg[i]))
+        {
+            plain[j++] = toupper((unsigned char)msg[i]);
+        }
+    }
+
+    // Add X if the number of characters is odd
+    if (j % 2 != 0)
+        plain[j++] = 'X';
+
+    plain[j] = '\0';
+
+    printf("Original Plaintext: %s\n", plain);
+
+    // Encryption
+    printf("\nEncrypted Ciphertext: ");
+    process(plain, key);
+
+    // Store ciphertext for decryption
+    strcpy(cipher, "");
+
+    for (i = 0; i < j; i += 2)
+    {
+        int a = plain[i] - 'A';
+        int b = plain[i + 1] - 'A';
+
+        int x = (9 * a + 4 * b) % 26;
+        int y = (5 * a + 7 * b) % 26;
+
+        cipher[i] = x + 'A';
+        cipher[i + 1] = y + 'A';
+    }
+
+    cipher[j] = '\0';
+
+    // Decryption
+    printf("\nDecrypted Plaintext: ");
+    process(cipher, inverse);
+
+    return 0;
+}
