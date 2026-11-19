@@ -1,0 +1,80 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int main()
+{
+    char plain[] = "SEND MORE MONEY";
+    char target[] = "CASH NOT NEEDED";
+
+    int key[13] = {
+        9, 0, 1, 7, 23, 15, 21,
+        14, 11, 11, 2, 8, 9
+    };
+
+    char p[100], t[100], cipher[100];
+    int newkey[100];
+    int i, j = 0, n;
+
+    // Remove spaces from plaintext
+    for (i = 0; plain[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)plain[i]))
+            p[j++] = toupper((unsigned char)plain[i]);
+    }
+    p[j] = '\0';
+    n = j;
+
+    printf("Plaintext: %s\n", p);
+
+    // Part A: Encryption
+    printf("\nEncryption:\n");
+
+    for (i = 0; i < n; i++)
+    {
+        cipher[i] = ((p[i] - 'A' + key[i]) % 26) + 'A';
+    }
+    cipher[n] = '\0';
+
+    printf("Ciphertext: %s\n", cipher);
+
+    // Remove spaces from target plaintext
+    j = 0;
+
+    for (i = 0; target[i] != '\0'; i++)
+    {
+        if (isalpha((unsigned char)target[i]))
+            t[j++] = toupper((unsigned char)target[i]);
+    }
+    t[j] = '\0';
+
+    // Part B: Find new key
+    printf("\nFinding New Key:\n");
+
+    for (i = 0; i < n; i++)
+    {
+        newkey[i] =
+            (cipher[i] - 'A' - (t[i] - 'A') + 26) % 26;
+    }
+
+    printf("New Key: ");
+
+    for (i = 0; i < n; i++)
+        printf("%d ", newkey[i]);
+
+    // Decryption using new key
+    printf("\n\nDecrypted Plaintext: ");
+
+    for (i = 0; i < n; i++)
+    {
+        char ch = ((cipher[i] - 'A'
+                   - newkey[i] + 26) % 26) + 'A';
+
+        printf("%c", ch);
+    }
+
+    printf("\n");
+
+    return 0;
+}
