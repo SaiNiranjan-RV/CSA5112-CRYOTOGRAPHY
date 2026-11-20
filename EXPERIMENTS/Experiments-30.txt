@@ -1,0 +1,53 @@
+
+#include <stdio.h>
+#include <stdint.h>
+
+// Simple toy encryption function
+// NOT a secure block cipher
+uint8_t encrypt(uint8_t key, uint8_t block) {
+    return (uint8_t)(block + key);
+}
+
+// CBC-MAC for two blocks
+uint8_t cbcMac(uint8_t key, uint8_t x1, uint8_t x2) {
+    uint8_t c1, c2;
+
+    // First block
+    c1 = encrypt(key, x1);
+
+    // Second block
+    c2 = encrypt(key, x2 ^ c1);
+
+    return c2;
+}
+
+int main() {
+    uint8_t key = 25;
+    uint8_t X = 40;
+
+    // MAC of one-block message X
+    uint8_t T = encrypt(key, X);
+
+    // Construct second block: X XOR T
+    uint8_t secondBlock = X ^ T;
+
+    // MAC of two-block message X || (X XOR T)
+    uint8_t forgedMAC = cbcMac(key, X, secondBlock);
+
+    printf("Secret key: %u\n", key);
+    printf("Message X: %u\n", X);
+    printf("MAC of X (T): %u\n", T);
+
+    printf("\nConstructed two-block message:\n");
+    printf("First block: %u\n", X);
+    printf("Second block (X XOR T): %u\n", secondBlock);
+
+    printf("\nMAC of two-block message: %u\n", forgedMAC);
+
+    if (T == forgedMAC)
+        printf("Attack successful! Both MAC values are equal.\n");
+    else
+        printf("Attack failed.\n");
+
+    return 0;
+}
