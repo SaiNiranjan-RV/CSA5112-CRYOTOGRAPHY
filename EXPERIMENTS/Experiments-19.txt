@@ -1,0 +1,93 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+
+#define KEY_SIZE 24
+#define IV_SIZE 8
+#define BLOCK_SIZE 8
+#define MAX_SIZE 1024
+
+void printHex(const char *label,
+              unsigned char data[], int len) {
+    int i;
+
+    printf("%s", label);
+
+    for (i = 0; i < len; i++)
+        printf("%02X", data[i]);
+
+    printf("\n");
+}
+
+int main() {
+    unsigned char key[KEY_SIZE];
+    unsigned char iv[IV_SIZE];
+
+    unsigned char plaintext[MAX_SIZE];
+    unsigned char ciphertext[MAX_SIZE + BLOCK_SIZE];
+
+    int len, ciphertext_len;
+    EVP_CIPHER_CTX *ctx;
+
+    printf("Enter plaintext: ");
+    if (fgets((char *)plaintext, MAX_SIZE, stdin) == NULL)
+        return 1;
+
+    len = strlen((char *)plaintext);
+
+    // Generate random 3DES key and IV
+    if (RAND_bytes(key, KEY_SIZE) != 1 ||
+        RAND_bytes(iv, IV_SIZE) != 1) {
+        printf("Random generation failed.\n");
+        return 1;
+    }
+
+    // Create encryption context
+    ctx = EVP_CIPHER_CTX_new();
+
+    if (ctx == NULL)
+        return 1;
+
+    // Initialize 3DES CBC encryption
+    if (EVP_EncryptInit_ex(ctx, EVP_des_ede3_cbc(),
+                           NULL, key, iv) != 1) {
+        printf("Encryption initialization failed.\n");
+        EVP_CIPHER_CTX_free(ctx);
+        return 1;
+    }
+
+    // Encrypt plaintext
+    if (EVP_EncryptUpdate(ctx, ciphertext,
+                          &ciphertext_len,
+                          plaintext, len) != 1) {
+        printf("Encryption failed.\n");
+        EVP_CIPHER_CTX_free(ctx);
+        return 1;
+    }
+
+    // Add padding and finalize encryption
+    if (EVP_EncryptFinal_ex(ctx,
+             ciphertext + ciphertext_len,
+             &len) != 1) {
+        printf("Final encryption failed.\n");
+        EVP_CIPHER_CTX_free(ctx);
+        return 1;
+    }
+
+    ciphertext_len += len;
+
+    // Display results
+    printf("\n3DES CBC Encryption Results\n");
+
+    // Demo only: never expose a real encryption key
+    printHex("Key: ", key, KEY_SIZE);
+    printHex("IV: ", iv, IV_SIZE);
+    printHex("Ciphertext: ", ciphertext, ciphertext_len);
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    return 0;
+}
