@@ -1,0 +1,89 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+
+#define KEY_SIZE 24
+#define MAX_SIZE 1024
+
+void display(char *label, unsigned char data[], int len)
+{
+    int i;
+
+    printf("%s", label);
+
+    for (i = 0; i < len; i++)
+        printf("%02X ", data[i]);
+
+    printf("\n");
+}
+
+int main()
+{
+    unsigned char key[KEY_SIZE];
+
+    unsigned char plaintext[MAX_SIZE];
+    unsigned char ciphertext[MAX_SIZE + 16];
+    unsigned char decrypted[MAX_SIZE + 16];
+
+    int len, cipher_len, plain_len;
+
+    EVP_CIPHER_CTX *ctx;
+
+    printf("Enter plaintext: ");
+    fgets((char *)plaintext, MAX_SIZE, stdin);
+
+    len = strlen((char *)plaintext);
+
+    // Generate random key
+    RAND_bytes(key, KEY_SIZE);
+
+    // Create encryption context
+    ctx = EVP_CIPHER_CTX_new();
+
+    // Initialize ECB encryption
+    EVP_EncryptInit_ex(ctx, EVP_des_ede3_ecb(),
+                       NULL, key, NULL);
+
+    // Encrypt plaintext
+    EVP_EncryptUpdate(ctx, ciphertext,
+                      &cipher_len, plaintext, len);
+
+    EVP_EncryptFinal_ex(ctx,
+                        ciphertext + cipher_len,
+                        &len);
+
+    cipher_len += len;
+
+    display("Encrypted ciphertext: ",
+            ciphertext, cipher_len);
+
+    // Introduce an error in the first ciphertext block
+    ciphertext[0] ^= 0x01;
+
+    printf("\nAfter introducing an error:\n");
+
+    // Initialize ECB decryption
+    EVP_DecryptInit_ex(ctx, EVP_des_ede3_ecb(),
+                       NULL, key, NULL);
+
+    // Decrypt ciphertext
+    EVP_DecryptUpdate(ctx, decrypted,
+                      &plain_len, ciphertext,
+                      cipher_len);
+
+    EVP_DecryptFinal_ex(ctx,
+                        decrypted + plain_len,
+                        &len);
+
+    plain_len += len;
+
+    decrypted[plain_len] = '\0';
+
+    printf("Decrypted text: %s\n", decrypted);
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    return 0;
+}
