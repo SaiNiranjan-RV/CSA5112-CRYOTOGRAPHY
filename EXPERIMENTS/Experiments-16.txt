@@ -1,0 +1,117 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MAX 10000
+#define ALPHABET 26
+
+// English letter frequencies (most to least frequent)
+const char english[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Structure to store letter frequency
+typedef struct {
+    char letter;
+    int count;
+} Frequency;
+
+// Sort letters by frequency
+void sortFrequency(Frequency freq[]) {
+    int i, j;
+    Frequency temp;
+
+    for (i = 0; i < ALPHABET - 1; i++) {
+        for (j = i + 1; j < ALPHABET; j++) {
+            if (freq[i].count < freq[j].count) {
+                temp = freq[i];
+                freq[i] = freq[j];
+                freq[j] = temp;
+            }
+        }
+    }
+}
+
+// Generate plaintext using substitution mapping
+void decrypt(char cipher[], char result[],
+             char mapping[]) {
+    int i;
+
+    for (i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha((unsigned char)cipher[i])) {
+            char c = toupper((unsigned char)cipher[i]);
+            result[i] = mapping[c - 'A'];
+            
+            if (islower((unsigned char)cipher[i]))
+                result[i] = tolower(result[i]);
+        } else {
+            result[i] = cipher[i];
+        }
+    }
+
+    result[i] = '\0';
+}
+
+int main() {
+    char cipher[MAX], plaintext[MAX];
+    char mapping[ALPHABET];
+    Frequency freq[ALPHABET];
+
+    int i, top, count = 0;
+
+    printf("Enter ciphertext:\n");
+    fgets(cipher, MAX, stdin);
+
+    printf("Enter number of possible plaintexts: ");
+    scanf("%d", &top);
+
+    if (top < 1) {
+        printf("Invalid number.\n");
+        return 1;
+    }
+
+    // Initialize frequency array
+    for (i = 0; i < ALPHABET; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+
+    // Count ciphertext letter frequencies
+    for (i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha((unsigned char)cipher[i])) {
+            freq[toupper((unsigned char)cipher[i]) - 'A'].count++;
+            count++;
+        }
+    }
+
+    if (count == 0) {
+        printf("No alphabetic characters found.\n");
+        return 1;
+    }
+
+    // Sort by descending frequency
+    sortFrequency(freq);
+
+    printf("\nLetter frequency analysis:\n");
+
+    for (i = 0; i < ALPHABET; i++) {
+        printf("%c : %d\n",
+               freq[i].letter, freq[i].count);
+    }
+
+    // Generate substitution mapping
+    for (i = 0; i < ALPHABET; i++) {
+        mapping[freq[i].letter - 'A'] = english[i];
+    }
+
+    // Display possible plaintext
+    decrypt(cipher, plaintext, mapping);
+
+    printf("\nPossible plaintext (frequency analysis):\n");
+    printf("%s\n", plaintext);
+
+    printf("\nRequested top %d possible plaintext(s).\n", top);
+    printf("Note: This basic program generates only one candidate.\n");
+
+    return 0;
+}
