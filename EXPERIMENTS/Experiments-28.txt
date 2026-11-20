@@ -1,0 +1,58 @@
+
+#include <stdio.h>
+
+long long powerMod(long long base, long long exp,
+                   long long mod) {
+    long long result = 1;
+    base %= mod;
+
+    while (exp > 0) {
+        if (exp % 2)
+            result = (result * base) % mod;
+
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+
+    return result;
+}
+
+int main() {
+    long long q, a;
+    long long xA, xB;
+    long long YA, YB;
+    long long keyA, keyB;
+
+    printf("Enter prime number q: ");
+    scanf("%lld", &q);
+
+    printf("Enter public number a: ");
+    scanf("%lld", &a);
+
+    printf("Enter Alice's secret number: ");
+    scanf("%lld", &xA);
+
+    printf("Enter Bob's secret number: ");
+    scanf("%lld", &xB);
+
+    // Calculate public values
+    YA = powerMod(a, xA, q);
+    YB = powerMod(a, xB, q);
+
+    printf("\nAlice sends: %lld\n", YA);
+    printf("Bob sends: %lld\n", YB);
+
+    // Calculate shared secret keys
+    keyA = powerMod(YB, xA, q);
+    keyB = powerMod(YA, xB, q);
+
+    printf("\nAlice's shared key: %lld\n", keyA);
+    printf("Bob's shared key: %lld\n", keyB);
+
+    if (keyA == keyB)
+        printf("Shared key established successfully.\n");
+    else
+        printf("Key exchange failed.\n");
+
+    return 0;
+}
