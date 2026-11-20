@@ -1,0 +1,173 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+
+#define BLOCK_SIZE 16
+#define MAX_SIZE 1024
+#define KEY_SIZE 16
+#define IV_SIZE 16
+
+// Display data in hexadecimal
+void display(char *label, unsigned char data[], int len)
+{
+    int i;
+
+    printf("%s", label);
+
+    for (i = 0; i < len; i++)
+        printf("%02X ", data[i]);
+
+    printf("\n");
+}
+
+// Apply 1-bit followed by zero-bit padding.
+// Byte representation: 0x80 followed by zero bytes.
+int addPadding(unsigned char input[],
+                int len,
+                unsigned char output[])
+{
+    int paddedLen = ((len / BLOCK_SIZE) + 1)
+                    * BLOCK_SIZE;
+
+    memcpy(output, input, len);
+
+    memset(output + len, 0, paddedLen - len);
+
+    output[len] = 0x80;
+
+    return paddedLen;
+}
+
+// Encrypt using the selected AES mode
+int encryptData(const EVP_CIPHER *cipher,
+                unsigned char key[],
+                unsigned char iv[],
+                unsigned char input[],
+                int inputLen,
+                unsigned char output[])
+{
+    EVP_CIPHER_CTX *ctx;
+    int len, totalLen;
+
+    ctx = EVP_CIPHER_CTX_new();
+
+    if (ctx == NULL)
+        return -1;
+
+    if (EVP_EncryptInit_ex(ctx, cipher, NULL,
+                           key, iv) != 1)
+        goto error;
+
+    // Disable OpenSSL padding; padding is manual.
+    if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1)
+        goto error;
+
+    if (EVP_EncryptUpdate(ctx, output, &len,
+                          input, inputLen) != 1)
+        goto error;
+
+    totalLen = len;
+
+    if (EVP_EncryptFinal_ex(ctx, output + totalLen,
+                            &len) != 1)
+        goto error;
+
+    totalLen += len;
+
+    EVP_CIPHER_CTX_free(ctx);
+    return totalLen;
+
+error:
+    EVP_CIPHER_CTX_free(ctx);
+    return -1;
+}
+
+int main()
+{
+    unsigned char plaintext[MAX_SIZE];
+    unsigned char padded[MAX_SIZE + BLOCK_SIZE];
+
+    unsigned char ciphertext[MAX_SIZE + BLOCK_SIZE];
+
+    unsigned char key[KEY_SIZE];
+    unsigned char iv[IV_SIZE];
+
+    int len, paddedLen, cipherLen;
+
+    printf("Enter plaintext: ");
+
+    if (fgets((char *)plaintext, MAX_SIZE, stdin) == NULL)
+        return 1;
+
+    len = strlen((char *)plaintext);
+
+    if (len > 0 && plaintext[len - 1] == '\n')
+        len--;
+
+    if (len == 0) {
+        printf("Plaintext must not be empty.\n");
+        return 1;
+    }
+
+    // Generate random AES key and IV
+    if (RAND_bytes(key, KEY_SIZE) != 1 ||
+        RAND_bytes(iv, IV_SIZE) != 1) {
+        printf("Random generation failed.\n");
+        return 1;
+    }
+
+    // Apply padding
+    paddedLen = addPadding(plaintext, len, padded);
+
+    printf("\nOriginal plaintext: %.*s\n", len, plaintext);
+
+    display("AES Key: ", key, KEY_SIZE);
+    display("Initialization Vector: ", iv, IV_SIZE);
+
+    printf("\n========== ECB MODE ==========\n");
+
+    cipherLen = encryptData(EVP_aes_128_ecb(),
+                            key, NULL,
+                            padded, paddedLen,
+                            ciphertext);
+
+    if (cipherLen < 0) {
+        printf("ECB encryption failed.\n");
+        return 1;
+    }
+
+    display("ECB Ciphertext: ", ciphertext, cipherLen);
+
+    printf("\n========== CBC MODE ==========\n");
+
+    cipherLen = encryptData(EVP_aes_128_cbc(),
+                            key, iv,
+                            padded, paddedLen,
+                            ciphertext);
+
+    if (cipherLen < 0) {
+        printf("CBC encryption failed.\n");
+        return 1;
+    }
+
+    display("CBC Ciphertext: ", ciphertext, cipherLen);
+
+    printf("\n========== CFB MODE ==========\n");
+
+    cipherLen = encryptData(EVP_aes_128_cfb128(),
+                            key, iv,
+                            padded, paddedLen,
+                            ciphertext);
+
+    if (cipherLen < 0) {
+        printf("CFB encryption failed.\n");
+        return 1;
+    }
+
+    display("CFB Ciphertext: ", ciphertext, cipherLen);
+
+    return 0;
+}
