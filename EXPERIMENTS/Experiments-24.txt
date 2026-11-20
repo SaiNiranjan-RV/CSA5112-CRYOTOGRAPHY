@@ -1,0 +1,107 @@
+
+#include <stdio.h>
+
+// Find GCD and modular inverse
+int extendedEuclidean(int a, int b,
+                      int *x, int *y)
+{
+    if (b == 0) {
+        *x = 1;
+        *y = 0;
+        return a;
+    }
+
+    int x1, y1;
+
+    int gcd = extendedEuclidean(b, a % b,
+                                &x1, &y1);
+
+    *x = y1;
+    *y = x1 - (a / b) * y1;
+
+    return gcd;
+}
+
+// Find modular inverse
+int modInverse(int e, int phi)
+{
+    int x, y;
+
+    extendedEuclidean(e, phi, &x, &y);
+
+    return (x % phi + phi) % phi;
+}
+
+// Modular exponentiation
+long long powerMod(long long base,
+                   long long exp,
+                   long long mod)
+{
+    long long result = 1;
+
+    base %= mod;
+
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * base) % mod;
+
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+
+    return result;
+}
+
+int main()
+{
+    int p = 59;
+    int q = 61;
+
+    int e = 31;
+
+    int n = p * q;
+    int phi = (p - 1) * (q - 1);
+
+    int d;
+
+    long long message, cipher, decrypted;
+
+    // Calculate private key
+    d = modInverse(e, phi);
+
+    printf("RSA ALGORITHM\n");
+
+    printf("\nPublic Key:\n");
+    printf("e = %d\n", e);
+    printf("n = %d\n", n);
+
+    printf("\nPrime Factors:\n");
+    printf("p = %d\n", p);
+    printf("q = %d\n", q);
+
+    printf("\nEuler Totient Function:\n");
+    printf("phi(n) = %d\n", phi);
+
+    printf("\nPrivate Key:\n");
+    printf("d = %d\n", d);
+
+    printf("\nEnter message (0 to %d): ", n - 1);
+    scanf("%lld", &message);
+
+    if (message < 0 || message >= n) {
+        printf("Invalid message!\n");
+        return 1;
+    }
+
+    // Encryption: C = M^e mod n
+    cipher = powerMod(message, e, n);
+
+    printf("\nEncrypted Message = %lld\n", cipher);
+
+    // Decryption: M = C^d mod n
+    decrypted = powerMod(cipher, d, n);
+
+    printf("Decrypted Message = %lld\n", decrypted);
+
+    return 0;
+}
