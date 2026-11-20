@@ -1,0 +1,43 @@
+
+#include <stdio.h>
+
+#define TOTAL_LANES 25
+#define RATE_LANES 16
+#define CAPACITY_LANES 9
+
+int main() {
+    int state[TOTAL_LANES] = {0};
+    int i, nonzero = 0;
+
+    // First message block:
+    // Every rate lane has at least one nonzero bit.
+    for (i = 0; i < RATE_LANES; i++) {
+        state[i] = 1;
+    }
+
+    printf("SHA-3 State Analysis\n");
+    printf("--------------------\n");
+
+    printf("Total lanes: %d\n", TOTAL_LANES);
+    printf("Rate lanes: %d\n", RATE_LANES);
+    printf("Capacity lanes: %d\n", CAPACITY_LANES);
+
+    // Check capacity lanes
+    for (i = RATE_LANES; i < TOTAL_LANES; i++) {
+        if (state[i] != 0)
+            nonzero++;
+    }
+
+    printf("\nAfter processing first message block:\n");
+    printf("Nonzero rate lanes: %d\n", RATE_LANES);
+    printf("Nonzero capacity lanes: %d\n", nonzero);
+
+    if (nonzero == CAPACITY_LANES) {
+        printf("All capacity lanes are nonzero.\n");
+    } else {
+        printf("Capacity lanes remain zero.\n");
+        printf("Without permutation, they never become nonzero.\n");
+    }
+
+    return 0;
+}
