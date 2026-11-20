@@ -1,0 +1,13 @@
+
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
+
+#define ROUNDS 16
+
+// PC-1 permutation table
+int PC1[56] = {
+    57,49,41,33,25,17,9,
+    1,58,50,42,34,26,18,
+    10,2,59,51,43,35,27,
+    19,11,3,60,52,44
