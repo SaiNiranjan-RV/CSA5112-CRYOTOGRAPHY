@@ -1,0 +1,150 @@
+
+#include <stdio.h>
+
+// Calculate GCD
+int gcd(int a, int b)
+{
+    while (b != 0) {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+
+    return a;
+}
+
+// Extended Euclidean Algorithm
+int extendedGCD(int a, int b,
+                int *x, int *y)
+{
+    if (b == 0) {
+        *x = 1;
+        *y = 0;
+        return a;
+    }
+
+    int x1, y1;
+
+    int g = extendedGCD(b, a % b,
+                        &x1, &y1);
+
+    *x = y1;
+    *y = x1 - (a / b) * y1;
+
+    return g;
+}
+
+// Calculate modular inverse
+int modInverse(int e, int phi)
+{
+    int x, y;
+
+    int g = extendedGCD(e, phi, &x, &y);
+
+    if (g != 1)
+        return -1;
+
+    return (x % phi + phi) % phi;
+}
+
+// Modular exponentiation
+long long powerMod(long long base,
+                   long long exp,
+                   long long mod)
+{
+    long long result = 1;
+
+    base %= mod;
+
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * base) % mod;
+
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+
+    return result;
+}
+
+int main()
+{
+    int n, e, M;
+    int p, q, phi, d;
+    int g;
+
+    int count, i;
+    long long C[100];
+
+    printf("Enter RSA modulus n: ");
+    scanf("%d", &n);
+
+    printf("Enter public exponent e: ");
+    scanf("%d", &e);
+
+    printf("Enter known plaintext block: ");
+    scanf("%d", &M);
+
+    // Find common factor
+    g = gcd(M, n);
+
+    printf("\nGCD(%d, %d) = %d\n", M, n, g);
+
+    if (g == 1 || g == n) {
+        printf("No non-trivial factor of n found.\n");
+        printf("Private key cannot be recovered by this method.\n");
+        return 0;
+    }
+
+    // Find factors
+    p = g;
+    q = n / p;
+
+    printf("\nFactors of n:\n");
+    printf("p = %d\n", p);
+    printf("q = %d\n", q);
+
+    // Calculate Euler's totient
+    phi = (p - 1) * (q - 1);
+
+    printf("\nPhi(n) = %d\n", phi);
+
+    // Calculate private key
+    d = modInverse(e, phi);
+
+    if (d == -1) {
+        printf("Invalid RSA public exponent.\n");
+        return 1;
+    }
+
+    printf("\nPrivate Key:\n");
+    printf("d = %d\n", d);
+
+    // Decrypt multiple ciphertext blocks
+    printf("\nEnter number of ciphertext blocks: ");
+    scanf("%d", &count);
+
+    if (count < 1 || count > 100) {
+        printf("Invalid number of blocks.\n");
+        return 1;
+    }
+
+    printf("Enter ciphertext blocks:\n");
+
+    for (i = 0; i < count; i++) {
+        scanf("%lld", &C[i]);
+    }
+
+    printf("\nDecrypted Plaintext Blocks:\n");
+
+    for (i = 0; i < count; i++) {
+        long long plain =
+            powerMod(C[i], d, n);
+
+        printf("%lld ", plain);
+    }
+
+    printf("\n");
+
+    return 0;
+}
