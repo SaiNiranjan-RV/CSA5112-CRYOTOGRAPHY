@@ -1,0 +1,97 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+long long powerMod(long long base, long long exp,
+                   long long mod) {
+    long long result = 1;
+    base %= mod;
+
+    while (exp > 0) {
+        if (exp % 2)
+            result = (result * base) % mod;
+
+        base = (base * base) % mod;
+        exp /= 2;
+    }
+
+    return result;
+}
+
+// Modular inverse using extended Euclidean algorithm
+long long inverse(long long a, long long m) {
+    long long t = 0, newt = 1;
+    long long r = m, newr = a;
+
+    while (newr != 0) {
+        long long q = r / newr;
+        long long temp = t;
+        t = newt;
+        newt = temp - q * newt;
+
+        temp = r;
+        r = newr;
+        newr = temp - q * newr;
+    }
+
+    if (r != 1)
+        return -1;
+
+    return (t + m) % m;
+}
+
+int main() {
+    // Small DSA demonstration parameters
+    long long p = 23, q = 11, g = 2;
+    long long x = 3;       // Private key
+    long long y = powerMod(g, x, p);
+
+    long long hash = 5;    // Toy message hash
+    long long k1 = 2;
+    long long k2 = 6;      // Different per-signature values
+
+    long long r1, s1, r2, s2;
+    long long kinv;
+
+    printf("DSA Signature Demonstration\n");
+    printf("---------------------------\n");
+
+    // First signature
+    r1 = powerMod(g, k1, p) % q;
+    kinv = inverse(k1, q);
+    s1 = (kinv * (hash + x * r1)) % q;
+
+    // Second signature of the same message
+    r2 = powerMod(g, k2, p) % q;
+    kinv = inverse(k2, q);
+    s2 = (kinv * (hash + x * r2)) % q;
+
+    printf("Public key y = %lld\n", y);
+
+    printf("\nFirst DSA signature:\n");
+    printf("r = %lld, s = %lld\n", r1, s1);
+
+    printf("\nSecond DSA signature:\n");
+    printf("r = %lld, s = %lld\n", r2, s2);
+
+    if (r1 != r2 || s1 != s2)
+        printf("\nDSA signatures are different.\n");
+
+    // Simplified deterministic RSA illustration
+    // RSA signature = hash^d mod n
+    long long n = 55;
+    long long d = 27;
+
+    long long rsa1 = powerMod(hash, d, n);
+    long long rsa2 = powerMod(hash, d, n);
+
+    printf("\nRSA Signature Demonstration:\n");
+    printf("First RSA signature  = %lld\n", rsa1);
+    printf("Second RSA signature = %lld\n", rsa2);
+
+    if (rsa1 == rsa2)
+        printf("RSA signatures are identical.\n");
+
+    return 0;
+}
