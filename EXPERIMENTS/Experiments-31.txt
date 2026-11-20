@@ -1,0 +1,107 @@
+
+#include <stdio.h>
+#include <stdint.h>
+
+void leftShift64(uint8_t input[8], uint8_t output[8]) {
+    int i;
+    uint8_t carry = 0;
+
+    for (i = 7; i >= 0; i--) {
+        uint8_t nextCarry = (input[i] >> 7) & 1;
+        output[i] = (input[i] << 1) | carry;
+        carry = nextCarry;
+    }
+}
+
+void leftShift128(uint8_t input[16], uint8_t output[16]) {
+    int i;
+    uint8_t carry = 0;
+
+    for (i = 15; i >= 0; i--) {
+        uint8_t nextCarry = (input[i] >> 7) & 1;
+        output[i] = (input[i] << 1) | carry;
+        carry = nextCarry;
+    }
+}
+
+void generate64(uint8_t L[8], uint8_t K1[8],
+                uint8_t K2[8]) {
+    int i;
+    uint8_t temp[8];
+
+    leftShift64(L, K1);
+
+    if (L[0] & 0x80)
+        K1[7] ^= 0x1B;
+
+    leftShift64(K1, temp);
+
+    for (i = 0; i < 8; i++)
+        K2[i] = temp[i];
+
+    if (K1[0] & 0x80)
+        K2[7] ^= 0x1B;
+}
+
+void generate128(uint8_t L[16], uint8_t K1[16],
+                 uint8_t K2[16]) {
+    int i;
+    uint8_t temp[16];
+
+    leftShift128(L, K1);
+
+    if (L[0] & 0x80)
+        K1[15] ^= 0x87;
+
+    leftShift128(K1, temp);
+
+    for (i = 0; i < 16; i++)
+        K2[i] = temp[i];
+
+    if (K1[0] & 0x80)
+        K2[15] ^= 0x87;
+}
+
+void printBlock(const char *name, uint8_t data[],
+                int size) {
+    int i;
+    printf("%s = ", name);
+
+    for (i = 0; i < size; i++)
+        printf("%02X", data[i]);
+
+    printf("\n");
+}
+
+int main() {
+    uint8_t L64[8] = {
+        0x80, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    uint8_t K1_64[8], K2_64[8];
+
+    uint8_t L128[16] = {
+        0x80, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    uint8_t K1_128[16], K2_128[16];
+
+    printf("CMAC Subkey Generation\n\n");
+
+    generate64(L64, K1_64, K2_64);
+
+    printf("64-bit block:\n");
+    printBlock("L  ", L64, 8);
+    printBlock("K1 ", K1_64, 8);
+    printBlock("K2 ", K2_64, 8);
+
+    generate128(L128, K1_128, K2_128);
+
+    printf("\n128-bit block:\n");
+    printBlock("L  ", L128, 16);
+    printBlock("K1 ", K1_128, 16);
+    printBlock("K2 ", K2_128, 16);
+
+    return 0;
+}
