@@ -1,0 +1,117 @@
+
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 8
+
+// Simple XOR block cipher (for demonstration)
+void encryptBlock(char *in, char *out, char key)
+{
+    for (int i = 0; i < BLOCK_SIZE; i++)
+        out[i] = in[i] ^ key;
+}
+
+void decryptBlock(char *in, char *out, char key)
+{
+    encryptBlock(in, out, key);
+}
+
+// Add padding: 1 followed by zeros
+void pad(char *data, int *len)
+{
+    int rem = *len % BLOCK_SIZE;
+    int padding = BLOCK_SIZE - rem;
+
+    data[(*len)++] = 0x80; // 1 followed by 7 zeros
+
+    for (int i = 1; i < padding; i++)
+        data[(*len)++] = 0;
+}
+
+// ECB Mode
+void ECB(char *data, int len, char key)
+{
+    char out[100];
+
+    for (int i = 0; i < len; i += BLOCK_SIZE)
+        encryptBlock(data + i, out + i, key);
+
+    printf("\nECB Encrypted: ");
+    for (int i = 0; i < len; i++)
+        printf("%02X ", (unsigned char)out[i]);
+}
+
+// CBC Mode
+void CBC(char *data, int len, char key)
+{
+    char out[100], iv[BLOCK_SIZE] = "12345678";
+    char temp[BLOCK_SIZE];
+
+    for (int i = 0; i < len; i += BLOCK_SIZE)
+    {
+        for (int j = 0; j < BLOCK_SIZE; j++)
+            temp[j] = data[i+j] ^ iv[j];
+
+        encryptBlock(temp, out+i, key);
+
+        for (int j = 0; j < BLOCK_SIZE; j++)
+            iv[j] = out[i+j];
+    }
+
+    printf("\nCBC Encrypted: ");
+    for (int i = 0; i < len; i++)
+        printf("%02X ", (unsigned char)out[i]);
+}
+
+// CFB Mode
+void CFB(char *data, int len, char key)
+{
+    char out[100], iv[BLOCK_SIZE] = "12345678";
+    char stream[BLOCK_SIZE];
+
+    for (int i = 0; i < len; i += BLOCK_SIZE)
+    {
+        encryptBlock(iv, stream, key);
+
+        for (int j = 0; j < BLOCK_SIZE; j++)
+        {
+            out[i+j] = data[i+j] ^ stream[j];
+            iv[j] = out[i+j];
+        }
+    }
+
+    printf("\nCFB Encrypted: ");
+    for (int i = 0; i < len; i++)
+        printf("%02X ", (unsigned char)out[i]);
+}
+
+int main()
+{
+    char data[100], key;
+    int len;
+
+    printf("Enter plaintext: ");
+    fgets(data, sizeof(data), stdin);
+
+    len = strlen(data);
+
+    if (len > 0 && data[len-1] == '\n')
+        len--;
+
+    printf("Enter key character: ");
+    scanf(" %c", &key);
+
+    // Always add padding
+    pad(data, &len);
+
+    printf("\nPadded Plaintext: ");
+    for (int i = 0; i < len; i++)
+        printf("%02X ", (unsigned char)data[i]);
+
+    ECB(data, len, key);
+    CBC(data, len, key);
+    CFB(data, len, key);
+
+    printf("\n");
+    return 0;
+}
