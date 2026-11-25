@@ -1,0 +1,70 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
+#define MAX 1000
+
+int main() {
+    char cipher[MAX], temp;
+    char letters[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+    int freq[26] = {0};
+    int order[26];
+
+    printf("Enter ciphertext:\n");
+    fgets(cipher, MAX, stdin);
+
+    int n;
+
+    printf("Enter number of possible plaintexts: ");
+    scanf("%d", &n);
+
+    for (int i = 0; cipher[i]; i++) {
+        if (isalpha(cipher[i]))
+            freq[toupper(cipher[i]) - 'A']++;
+    }
+
+    for (int i = 0; i < 26; i++)
+        order[i] = i;
+
+    for (int i = 0; i < 25; i++) {
+        for (int j = i + 1; j < 26; j++) {
+            if (freq[order[i]] < freq[order[j]]) {
+                int t = order[i];
+                order[i] = order[j];
+                order[j] = t;
+            }
+        }
+    }
+
+    printf("\nPossible plaintext:\n");
+
+    for (int k = 0; k < n && k < 26; k++) {
+        char map[26];
+
+        for (int i = 0; i < 26; i++)
+            map[i] = '?';
+
+        for (int i = 0; i < 26; i++)
+            map[order[i]] = letters[(i + k) % 26];
+
+        printf("\nCandidate %d: ", k + 1);
+
+        for (int i = 0; cipher[i]; i++) {
+            if (isalpha(cipher[i])) {
+                char ch = map[toupper(cipher[i]) - 'A'];
+
+                if (islower(cipher[i]))
+                    ch = tolower(ch);
+
+                putchar(ch);
+            }
+            else
+                putchar(cipher[i]);
+        }
+    }
+
+    return 0;
+}
