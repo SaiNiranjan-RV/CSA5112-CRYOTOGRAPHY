@@ -1,0 +1,68 @@
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+int modInverse(int a) {
+    for (int i = 1; i < 26; i++) {
+        if ((a * i) % 26 == 1)
+            return i;
+    }
+    return -1;
+}
+
+int main() {
+    char text[500];
+    int a, b, choice;
+
+    printf("Enter a: ");
+    scanf("%d", &a);
+
+    printf("Enter b: ");
+    scanf("%d", &b);
+
+    if (gcd(a, 26) != 1) {
+        printf("Invalid a! Choose a coprime with 26.\n");
+        return 0;
+    }
+
+    getchar();
+
+    printf("Enter text: ");
+    fgets(text, sizeof(text), stdin);
+
+    printf("1. Encryption\n2. Decryption\n");
+    scanf("%d", &choice);
+
+    int inv = modInverse(a);
+
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            int p, c;
+
+            if (choice == 1) {
+                p = toupper(text[i]) - 'A';
+                c = (a * p + b) % 26;
+                text[i] = c + 'A';
+            }
+            else if (choice == 2) {
+                c = toupper(text[i]) - 'A';
+                p = (inv * (c - b + 26)) % 26;
+                text[i] = p + 'A';
+            }
+        }
+    }
+
+    printf("Result: %s", text);
+
+    return 0;
+}
