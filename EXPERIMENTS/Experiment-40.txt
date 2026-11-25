@@ -1,0 +1,276 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
+#include <time.h>
+
+#define MAX_TEXT 10000
+#define MAX_TOP 100
+#define ALPHABET 26
+#define QUAD_SIZE 456976
+
+double quadScore[QUAD_SIZE];
+double floorScore;
+
+char cipher[MAX_TEXT];
+int text[MAX_TEXT];
+int length;
+
+typedef struct {
+    char key[26];
+    char plain[MAX_TEXT];
+    double score;
+} Candidate;
+
+Candidate best[MAX_TOP];
+int topCount = 0;
+int requested;
+
+// Convert four letters into an index
+int quadIndex(int a, int b, int c, int d) {
+    return ((a * 26 + b) * 26 + c) * 26 + d;
+}
+
+// Load English quadgram frequencies
+int loadQuadgrams(char *filename) {
+    FILE *fp = fopen(filename, "r");
+
+    if (fp == NULL) {
+        printf("Cannot open quadgram file!\n");
+        return 0;
+    }
+
+    long long count;
+    char gram[10];
+    long long total = 0;
+
+    long long counts[QUAD_SIZE] = {0};
+
+    while (fscanf(fp, "%4s %lld", gram, &count) == 2) {
+        if (strlen(gram) != 4)
+            continue;
+
+        int valid = 1;
+        int index = 0;
+
+        for (int i = 0; i < 4; i++) {
+            if (!isalpha((unsigned char)gram[i])) {
+                valid = 0;
+                break;
+            }
+
+            index = index * 26 +
+                    (toupper((unsigned char)gram[i]) - 'A');
+        }
+
+        if (valid && count > 0) {
+            counts[index] += count;
+            total += count;
+        }
+    }
+
+    fclose(fp);
+
+    if (total == 0)
+        return 0;
+
+    floorScore = log10(0.01 / total);
+
+    for (int i = 0; i < QUAD_SIZE; i++) {
+        if (counts[i] > 0)
+            quadScore[i] = log10((double)counts[i] / total);
+        else
+            quadScore[i] = floorScore;
+    }
+
+    return 1;
+}
+
+// Calculate plaintext score
+double calculateScore(char key[]) {
+    double score = 0;
+
+    for (int i = 0; i <= length - 4; i++) {
+        int a = key[text[i]];
+        int b = key[text[i + 1]];
+        int c = key[text[i + 2]];
+        int d = key[text[i + 3]];
+
+        score += quadScore[quadIndex(a, b, c, d)];
+    }
+
+    return score;
+}
+
+// Generate plaintext using substitution key
+void decrypt(char key[], char output[]) {
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha((unsigned char)cipher[i])) {
+            int index = toupper((unsigned char)cipher[i]) - 'A';
+
+            char ch = key[index] + 'A';
+
+            output[i] = islower((unsigned char)cipher[i])
+                        ? tolower(ch) : ch;
+        }
+        else {
+            output[i] = cipher[i];
+        }
+    }
+
+    output[strlen(cipher)] = '\0';
+}
+
+// Shuffle substitution key
+void randomKey(char key[]) {
+    for (int i = 0; i < 26; i++)
+        key[i] = i;
+
+    for (int i = 25; i > 0; i--) {
+        int j = rand() % (i + 1);
+
+        char temp = key[i];
+        key[i] = key[j];
+        key[j] = temp;
+    }
+}
+
+// Save a candidate if it belongs in top N
+void saveCandidate(char key[], double score) {
+    char output[MAX_TEXT];
+
+    decrypt(key, output);
+
+    for (int i = 0; i < topCount; i++) {
+        if (strcmp(best[i].plain, output) == 0)
+            return;
+    }
+
+    int position = topCount;
+
+    if (position >= requested) {
+        if (score <= best[position - 1].score)
+            return;
+
+        position--;
+    }
+    else {
+        topCount++;
+    }
+
+    while (position > 0 &&
+           score > best[position - 1].score) {
+        best[position] = best[position - 1];
+        position--;
+    }
+
+    best[position].score = score;
+    strcpy(best[position].plain, output);
+    memcpy(best[position].key, key, 26);
+}
+
+// Simulated annealing attack
+void attack() {
+    char key[26];
+    char newKey[26];
+
+    const int restarts = 100;
+    const int iterations = 30000;
+
+    for (int r = 0; r < restarts; r++) {
+        randomKey(key);
+
+        double currentScore = calculateScore(key);
+
+        for (int i = 0; i < iterations; i++) {
+            memcpy(newKey, key, 26);
+
+            int a = rand() % 26;
+            int b = rand() % 26;
+
+            char temp = newKey[a];
+            newKey[a] = newKey[b];
+            newKey[b] = temp;
+
+            double newScore = calculateScore(newKey);
+
+            double temperature =
+                15.0 * (1.0 - (double)i / iterations) + 0.1;
+
+            double difference = newScore - currentScore;
+
+            if (difference > 0 ||
+                ((double)rand() / RAND_MAX) <
+                exp(difference / temperature)) {
+
+                memcpy(key, newKey, 26);
+                currentScore = newScore;
+            }
+
+            if (i % 500 == 0)
+                saveCandidate(key, currentScore);
+        }
+
+        saveCandidate(key, currentScore);
+    }
+}
+
+int main() {
+    char filename[100];
+
+    srand((unsigned int)time(NULL));
+
+    printf("MONOALPHABETIC SUBSTITUTION CIPHER ATTACK\n");
+
+    printf("-----------------------------------------\n");
+
+    printf("Enter ciphertext:\n");
+    fgets(cipher, MAX_TEXT, stdin);
+
+    printf("Enter quadgram file name: ");
+    scanf("%99s", filename);
+
+    printf("Enter number of top plaintexts: ");
+    scanf("%d", &requested);
+
+    if (requested < 1)
+        requested = 1;
+
+    if (requested > MAX_TOP)
+        requested = MAX_TOP;
+
+    // Extract letters from ciphertext
+    for (int i = 0; cipher[i] != '\0'; i++) {
+        if (isalpha((unsigned char)cipher[i])) {
+            text[length++] =
+                toupper((unsigned char)cipher[i]) - 'A';
+        }
+    }
+
+    if (length < 4) {
+        printf("Ciphertext is too short!\n");
+        return 1;
+    }
+
+    if (!loadQuadgrams(filename)) {
+        printf("Error loading quadgram frequencies.\n");
+        return 1;
+    }
+
+    printf("\nPerforming frequency attack...\n");
+
+    attack();
+
+    printf("\nTOP %d POSSIBLE PLAINTEXTS\n", topCount);
+    printf("-----------------------------------------\n");
+
+    for (int i = 0; i < topCount; i++) {
+        printf("\nCandidate %d\n", i + 1);
+        printf("Score: %.2f\n", best[i].score);
+        printf("Plaintext: %s\n", best[i].plain);
+    }
+
+    return 0;
+}
